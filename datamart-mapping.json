@@ -1,0 +1,239 @@
+{
+    "data-mart": {
+        "properties": {
+            "permissions": {
+                "type": "nested",
+                "properties": {
+                    "permission": {
+                        "type": "text"
+                    }
+                }
+            },
+            "name": {
+                "type": "text"
+            },
+            "description": {
+                "type": "text"
+            },
+            "type": {
+                "type": "keyword"
+            },
+            "is-hidden": {
+                "type": "boolean"
+            },
+            "notes": {
+                "type": "nested",
+                "properties": {
+                    "description": {
+                        "type": "text"
+                    },
+                    "text": {
+                        "type": "text"
+                    },
+                    "user": {
+                        "type": "text"
+                    }
+                }
+            },
+            "entities": {
+                "type": "nested",
+                "properties": {
+                    "permissions": {
+                        "type": "nested",
+                        "properties": {
+                            "permission": {
+                                "type": "text"
+                            }
+                        }
+                    },
+                    "name": {
+                        "type": "text"
+                    },
+                    "business-description": {
+                        "type": "text"
+                    },
+                    "technical-description": {
+                        "type": "text"
+                    },
+                    "is-public": {
+                        "type": "boolean"
+                    },
+                    "allows-data-entry": {
+                        "type": "boolean"
+                    },
+                    "last-successful-load": {
+                        "type": "date",
+                        "format": "yyyy-MM-dd HH:mm:ss"
+                    },
+                    "database": {
+                        "type": "text"
+                    },
+                    "schema": {
+                        "type": "text"
+                    },
+                    "notes": {
+                        "type": "nested",
+                        "properties": {
+                            "description": {
+                                "type": "text"
+                            },
+                            "text": {
+                                "type": "text"
+                            },
+                            "user": {
+                                "type": "text"
+                            }
+                        }
+                    },
+                    "source-entity": {
+                        "properties": {
+                            "permissions": {
+                                "type": "nested",
+                                "properties": {
+                                    "permission": {
+                                        "type": "text"
+                                    }
+                                }
+                            },
+                            "name": {
+                                "type": "text"
+                            },
+                            "business-description": {
+                                "type": "text"
+                            },
+                            "technical-description": {
+                                "type": "text"
+                            },
+                            "is-public": {
+                                "type": "boolean"
+                            },
+                            "allows-data-entry": {
+                                "type": "boolean"
+                            },
+                            "last-successful-load": {
+                                "type": "date",
+                                "format": "yyyy-MM-dd HH:mm:ss"
+                            }
+                        }
+                    },
+                    "source-schema": {
+                        "type": "text"
+                    },
+                    "fields": {
+                        "type": "nested",
+                        "name": {
+                            "type": "text"
+                        },
+                        "business-description": {
+                            "type": "text"
+                        },
+                        "technical-description": {
+                            "type": "text"
+                        },
+                        "status": {
+                            "type": "keyword"
+                        },
+                        "data-type": {
+                            "type": "keyword"
+                        },
+                        "notes": {
+                            "type": "nested",
+                            "properties": {
+                                "description": {
+                                    "type": "text"
+                                },
+                                "text": {
+                                    "type": "text"
+                                },
+                                "user": {
+                                    "type": "text"
+                                }
+                            }
+                        },
+                        "source-field": {
+                            "properties": {
+                                "name": {
+                                    "type": "text"
+                                },
+                                "business-description": {
+                                    "type": "text"
+                                },
+                                "technical-description": {
+                                    "type": "text"
+                                },
+                                "status": {
+                                    "type": "keyword"
+                                },
+                                "data-type": {
+                                    "type": "keyword"
+                                }
+                            }
+                        }
+                    }
+                },
+                "source-bindings": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {
+                            "type": "text"
+                        },
+                        "description": {
+                            "type": "text"
+                        },
+                        "sql": {
+                            "type": "text"
+                        },
+                        "status": {
+                            "type": "keyword"
+                        },
+                        "notes": {
+                            "type": "nested",
+                            "properties": {
+                                "description": {
+                                    "type": "text"
+                                },
+                                "text": {
+                                    "type": "text"
+                                },
+                                "user": {
+                                    "type": "text"
+                                }
+                            }
+                        }
+                    }
+                },
+                "destination-bindings": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {
+                            "type": "text"
+                        },
+                        "description": {
+                            "type": "text"
+                        },
+                        "sql": {
+                            "type": "text"
+                        },
+                        "status": {
+                            "type": "keyword"
+                        },
+                        "notes": {
+                            "type": "nested",
+                            "properties": {
+                                "description": {
+                                    "type": "text"
+                                },
+                                "text": {
+                                    "type": "text"
+                                },
+                                "user": {
+                                    "type": "text"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
