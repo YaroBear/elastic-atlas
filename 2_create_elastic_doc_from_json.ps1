@@ -1,6 +1,6 @@
-﻿Set-Location C:\Users\spencer.nicol\Desktop\metadata
+﻿Set-Location C:\Users\spencer.nicol\Documents\github\elastic-atlas\output
 
-$rawDataMarts = Get-Content -Path .\datamart_1103.json | ConvertFrom-Json
+$rawDataMarts = Get-Content -Path .\1103_datamart.json | ConvertFrom-Json
 
 #region FUNCTIONS FOR DATAMART OBJECT CREATION
 function CreateEmpty-DatamartObject
@@ -116,7 +116,7 @@ foreach($rawDataMart in $rawDataMarts)
     $dataMart.'data-mart'.description = $rawDataMart.Description;
     $dataMart.'data-mart'.type = $rawDataMart.DataMartType;
     $dataMart.'data-mart'.'is-hidden' = & $rawDataMart.IsHidden;
-
+    
     foreach($rawEntity in $rawDataMart.Entities[0])
     {
 	    $entity = CreateEmpty-EntityObject;
@@ -128,7 +128,7 @@ foreach($rawDataMart in $rawDataMarts)
         $entity.'last-successful-load' = $rawEntity.LastSuccessfulLoadTimestamp;
         $entity.database = $rawEntity.AttributeValues[$rawEntity.AttributeValues.AttributeName.IndexOf('DatabaseName')].AttributeValue;
         $entity.schema = $rawEntity.AttributeValues[$rawEntity.AttributeValues.AttributeName.IndexOf('SchemaName')].AttributeValue;
-
+    
         foreach($rawField in $rawEntity.Fields)
         {
             $field = CreateEmpty-FieldObject;
@@ -137,12 +137,12 @@ foreach($rawDataMart in $rawDataMarts)
             $field.'technical-description' = $rawField.TechnicalDescription;
             $field.status = $rawField.Status;
             $field.'data-type' = $rawField.DataType;
-
+    
             $entity.fields += $field;        
         }
-
+    
         $dataMart.'data-mart'.entities += $entity;
     }
 }
 
-$dataMart | ConvertTo-Json -Depth 100 | Out-File "C:\Users\spencer.nicol\Desktop\metadata\elastic_doc.json" -Force
+$dataMart | ConvertTo-Json -Depth 100 | Out-File "C:\Users\spencer.nicol\Documents\github\elastic-atlas\output\1103_datamart_elastic_doc.json" -Force
