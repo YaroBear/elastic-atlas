@@ -69,5 +69,5 @@ foreach($dataMart in $dataMarts)
 	    }
     }
 
-    $dataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "C:\Users\spencer.nicol\Desktop\metadata\datamart_$($dataMart.Id).json" -Encoding Default -Force | Out-Null
+    $dataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "C:\Users\spencer.nicol\Documents\github\elastic-atlas\output\$($dataMart.Id)_datamart.json" -Encoding Default -Force | Out-Null
 }
