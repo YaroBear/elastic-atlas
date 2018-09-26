@@ -68,19 +68,17 @@ function Install-JRE
     Write-Host "JRE Install Finished"
 
     Write-Host "Setting JAVA_HOME env variable"
-    $Env:JAVA_HOME = "C:\Program Files\Java\jre-10.0.2"
+    [System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Java\jre-10.0.2", "Machine")
 }
 
 function Check-Java
 {
-    try
+    Write-Host "Checking JAVA_HOME env variable"
+    $javaHome = Get-ChildItem Env: | Where -Property "Name" -EQ "JAVA_HOME"
+    
+    If (!$javaHome)
     {
-        Write-Host "Checking JAVA JRE version"
-        start-process java -ArgumentList "-version" -NoNewWindow
-    }
-    catch
-    {
-        Write-Host "JRE is not installed, downloading JRE from the Web"
+        Write-Host "JAVA_HOME not set, installing JRE from the web"
         Install-JRE
     }
 }
@@ -102,14 +100,15 @@ function Get-Elasticsearch
 
     Write-Host "Starting Elasticsearch service"
     Start-Service -Name "elasticsearch-service-x64"
+    Get-Service -Name "elasticsearch-service-x64"
 }
 
 function Install
 {
     try
     {
-        md -Name setup
-        md -Name logs
+        md -Name setup -Force
+        md -Name logs -Force
         Check-Java
         Get-Elasticsearch
         Write-Host "Setup Complete"
