@@ -2,8 +2,8 @@
 $start = (Get-Date)
 function Get-Timepsan ($start, $end)
 {
-    $runTime = New-Timespan -Start $start -End $end;
-    return $("{0}:{1}:{2}:{3}" -f $runTime.Hours, $runTime.Minutes, $runTime.Seconds, $runTime.Milliseconds);
+	$runTime = New-Timespan -Start $start -End $end;
+	return $("{0}:{1}:{2}:{3}" -f $runTime.Hours, $runTime.Minutes, $runTime.Seconds, $runTime.Milliseconds);
 }
 function Get-AccessToken
 {
@@ -78,11 +78,12 @@ function Get-Datamarts
 	)
 	begin
 	{
-		$rawMarts = if ($dataMartIds) { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts?`$filter=Id eq $($dataMartIds -join ' or Id eq ')" } else { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts" };
-
+		$rawMarts = if ($dataMartIds) { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts?`$filter=Id eq $($dataMartIds -join ' or Id eq ')" }
+		else { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts" };
+		
 		#Get-DosData -Uri "$($metadataServiceUrl)/EntityRelationships"
-        #Get-DosData -Uri "$($metadataServiceUrl)/MetadataAuditLogs?`$top=5"
-
+		#Get-DosData -Uri "$($metadataServiceUrl)/MetadataAuditLogs?`$top=5"
+		
 		#region FUNCTIONS FOR EMPTY DATAMART OBJECT CREATION
 		function CreateEmpty-DatamartObject
 		{
@@ -200,18 +201,18 @@ function Get-Datamarts
 	process
 	{
 		Create-Directory -Dir $outputDirectory
-
-        $toProcess = $($rawMarts | Measure).Count;
-
-	    $Msg = "Getting data from $($CONFIG.METADATA_SERVICE_URL)..."; Write-Host $Msg -ForegroundColor Gray; Write-Verbose $Msg;
-        
-        $i = 0;
+		
+		$toProcess = $($rawMarts | Measure).Count;
+		
+		$Msg = "Getting data from $($CONFIG.METADATA_SERVICE_URL)..."; Write-Host $Msg -ForegroundColor Gray; Write-Verbose $Msg;
+		
+		$i = 0;
 		foreach ($rawMart in $rawMarts)
 		{
-            $i++;
-            $start = (Get-Date)
-	        $Msg = "$(" " * 4)[$($i)/$($toProcess)] $($rawMart.Name)..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
-
+			$i++;
+			$start = (Get-Date)
+			$Msg = "$(" " * 4)[$($i)/$($toProcess)] $($rawMart.Name)..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
+			
 			#region CREATE A RAW OBJECT OF THE DATA MART AS IT CAME FROM METADATA SERVICE
 			$rawDataMart = $rawMart;
 			$rawDataMart | Add-Member -Type NoteProperty -Name Entities -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Entities")
@@ -242,7 +243,7 @@ function Get-Datamarts
 			{
 				$rawField | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($rawField.Id) and AnnotatedObjectType eq 'Field')")
 			}
-            $rawDataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($rawDataMart.Id)_datamart.json" -Encoding Default -Force | Out-Null;
+			$rawDataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($rawDataMart.Id)_datamart.json" -Encoding Default -Force | Out-Null;
 			#endregion
 			
 			##region CREATE A NEW ELASTIC SEARCH VERSION OF THE DATA MART
@@ -282,9 +283,9 @@ function Get-Datamarts
 			#}
 			#$dataMart | ConvertTo-Json -Depth 100 | Out-File "$($outputDirectory)\$($rawDataMart.Id)_datamart_elastic_doc.json" -Force
 			##endregion
-
-            $end = (Get-Date)
-	        $Msg = "Success ~ $(Get-Timepsan -start $start -end $end)"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
+			
+			$end = (Get-Date)
+			$Msg = "Success ~ $(Get-Timepsan -start $start -end $end)"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
 		}
 	}
 }
