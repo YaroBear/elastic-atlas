@@ -1,7 +1,13 @@
 ﻿$CONFIG = Get-Content "$(Split-Path $MyInvocation.MyCommand.Path -Parent)\config.json" | ConvertFrom-Json
-
+$start = (Get-Date)
+function Get-Timepsan ($start, $end)
+{
+    $runTime = New-Timespan -Start $start -End $end;
+    return $("{0}:{1}:{2}:{3}" -f $runTime.Hours, $runTime.Minutes, $runTime.Seconds, $runTime.Milliseconds);
+}
 function Get-AccessToken
 {
+	$Msg = "Getting access token..."; Write-Host $Msg -ForegroundColor Gray; Write-Verbose $Msg;
 	$fabricUser = "fabric-installer"
 	$scopes = "dos/metadata dos/metadata.serviceAdmin fabric/authorization.read"
 	$url = "$($CONFIG.IDENTITY_SERVICE_URL)/connect/token"
@@ -11,7 +17,9 @@ function Get-AccessToken
 		scope	  = "$scopes"
 		client_secret = $CONFIG.DECRYPTED_INSTALLER_SECRET
 	}
-	$accessTokenResponse = Invoke-RestMethod -Method Post -Uri $url -Body $body
+	$Msg = "$(" " * 4)$($CONFIG.IDENTITY_SERVICE_URL)..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
+	$accessTokenResponse = Invoke-RestMethod -Method Post -Uri $url -Body $body; $end = (Get-Date);
+	$Msg = "Success"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
 	return $accessTokenResponse.access_token
 }
 function Get-DosData
@@ -70,10 +78,11 @@ function Get-Datamarts
 	)
 	begin
 	{
-		$rawMarts = if ($dataMartIds) { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts" | Where-Object { $_.Id -in $dataMartIds } }
-		else { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts" };
-		$rawNotes = Get-DosData -Uri "$($metadataServiceUrl)/Notes"
-		#$rawSummaryBindingDependencies = Get-DosData -Uri "$($metadataServiceUrl)/SummaryBindingDependencies"
+		$rawMarts = if ($dataMartIds) { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts?`$filter=Id eq $($dataMartIds -join ' or Id eq ')" } else { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts" };
+
+		#Get-DosData -Uri "$($metadataServiceUrl)/EntityRelationships"
+        #Get-DosData -Uri "$($metadataServiceUrl)/MetadataAuditLogs?`$top=5"
+
 		#region FUNCTIONS FOR EMPTY DATAMART OBJECT CREATION
 		function CreateEmpty-DatamartObject
 		{
@@ -180,30 +189,48 @@ function Get-Datamarts
 			$false
 		}
 		#endregion
+		function Create-Directory ($Dir)
+		{
+			If (!(Test-Path $Dir))
+			{
+				New-Item -ItemType Directory -Force -Path $Dir -ErrorAction Stop | Out-Null
+			}
+		}
 	}
 	process
 	{
+		Create-Directory -Dir $outputDirectory
+
+        $toProcess = $($rawMarts | Measure).Count;
+
+	    $Msg = "Getting data from $($CONFIG.METADATA_SERVICE_URL)..."; Write-Host $Msg -ForegroundColor Gray; Write-Verbose $Msg;
+        
+        $i = 0;
 		foreach ($rawMart in $rawMarts)
 		{
+            $i++;
+            $start = (Get-Date)
+	        $Msg = "$(" " * 4)[$($i)/$($toProcess)] $($rawMart.Name)..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
+
 			#region CREATE A RAW OBJECT OF THE DATA MART AS IT CAME FROM METADATA SERVICE
 			$rawDataMart = $rawMart;
 			$rawDataMart | Add-Member -Type NoteProperty -Name Entities -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Entities")
 			$rawDataMart | Add-Member -Type NoteProperty -Name Bindings -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Bindings")
 			$rawDataMart | Add-Member -Type NoteProperty -Name Connections -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Connections")
 			$rawDataMart | Add-Member -Type NoteProperty -Name RelatedResources -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/RelatedResources")
-			$rawDataMart | Add-Member -Type NoteProperty -Name Notes -Value @($rawNotes | Where-Object { $_.AnnotatedObjectId -eq $rawDataMart.Id -and $_.AnnotatedObjectType -eq "DataMart" })
+			$rawDataMart | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($rawDataMart.Id) and AnnotatedObjectType eq 'DataMart')")
 			foreach ($rawEntity in $rawDataMart.Entities)
 			{
 				$rawEntity | Add-Member -Type NoteProperty -Name Fields -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Entities($($rawEntity.Id))/Fields")
 				$rawEntity | Add-Member -Type NoteProperty -Name Indexes -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Entities($($rawEntity.Id))/Indexes")
-				$rawEntity | Add-Member -Type NoteProperty -Name Notes -Value @($rawNotes | Where-Object { $_.AnnotatedObjectId -eq $rawEntity.Id -and $_.AnnotatedObjectType -eq "Entity" })
+				$rawEntity | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($rawEntity.Id) and AnnotatedObjectType eq 'Entity')")
 			}
 			foreach ($rawBinding in $rawDataMart.Bindings)
 			{
 				$rawBinding | Add-Member -Type NoteProperty -Name BindingDependencies -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Bindings($($rawBinding.Id))/BindingDependencies")
 				$rawBinding | Add-Member -Type NoteProperty -Name IncrementalConfigurations -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Bindings($($rawBinding.Id))/IncrementalConfigurations")
 				$rawBinding | Add-Member -Type NoteProperty -Name ObjectRelationships -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Bindings($($rawBinding.Id))/ObjectRelationships")
-				$rawBinding | Add-Member -Type NoteProperty -Name Notes -Value @($rawNotes | Where-Object { $_.AnnotatedObjectId -eq $rawBinding.Id -and $_.AnnotatedObjectType -eq "Binding" })
+				$rawBinding | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($rawBinding.Id) and AnnotatedObjectType eq 'Binding')")
 				
 				foreach ($rawBindingDependency in $rawBinding.BindingDependencies)
 				{
@@ -213,10 +240,9 @@ function Get-Datamarts
 			
 			foreach ($rawField in $rawEntity.Fields)
 			{
-				$rawField | Add-Member -Type NoteProperty -Name Notes -Value @($rawNotes | Where-Object { $_.AnnotatedObjectId -eq $rawField.Id -and $_.AnnotatedObjectType -eq "Field" })
+				$rawField | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($rawField.Id) and AnnotatedObjectType eq 'Field')")
 			}
-			
-			$rawDataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($rawDataMart.Id)_datamart.json" -Encoding Default -Force | Out-Null;
+            $rawDataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($rawDataMart.Id)_datamart.json" -Encoding Default -Force | Out-Null;
 			#endregion
 			
 			##region CREATE A NEW ELASTIC SEARCH VERSION OF THE DATA MART
@@ -256,6 +282,9 @@ function Get-Datamarts
 			#}
 			#$dataMart | ConvertTo-Json -Depth 100 | Out-File "$($outputDirectory)\$($rawDataMart.Id)_datamart_elastic_doc.json" -Force
 			##endregion
+
+            $end = (Get-Date)
+	        $Msg = "Success ~ $(Get-Timepsan -start $start -end $end)"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
 		}
 	}
 }
