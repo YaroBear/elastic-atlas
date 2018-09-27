@@ -84,6 +84,7 @@ function Get-Datamarts
 		function CreateEmpty-DatamartObject
 		{
 			$datamart = New-Object PSObject;
+			$datamart | Add-Member -Type NoteProperty -Name Id -Value $Null;
 			$datamart | Add-Member -Type NoteProperty -Name Name -Value $Null;
 			$datamart | Add-Member -Type NoteProperty -Name Description -Value $Null;
 			$datamart | Add-Member -Type NoteProperty -Name DataMartType -Value $Null;
@@ -105,6 +106,7 @@ function Get-Datamarts
 		function CreateEmpty-NoteObject
 		{
 			$note = New-Object PSObject;
+			$note | Add-Member -Type NoteProperty -Name Id -Value $Null;
 			$note | Add-Member -Type NoteProperty -Name NoteType -Value $Null;
 			$note | Add-Member -Type NoteProperty -Name NoteText -Value $Null;
 			$note | Add-Member -Type NoteProperty -Name User -Value $Null;
@@ -115,6 +117,7 @@ function Get-Datamarts
 		function CreateEmpty-EntityObject
 		{
 			$entity = New-Object PSObject;
+			$entity | Add-Member -Type NoteProperty -Name Id -Value $Null;
 			$entity | Add-Member -Type NoteProperty -Name EntityName -Value $Null;
 			$entity | Add-Member -Type NoteProperty -Name DatabaseName -Value $Null;
 			$entity | Add-Member -Type NoteProperty -Name SchemaName -Value $Null;
@@ -133,6 +136,7 @@ function Get-Datamarts
 		function CreateEmpty-FieldObject
 		{
 			$field = New-Object PSObject;
+			$field | Add-Member -Type NoteProperty -Name Id -Value $Null;
 			$field | Add-Member -Type NoteProperty -Name FieldName -Value $Null;
 			$field | Add-Member -Type NoteProperty -Name BusinessDescription -Value $Null;
 			$field | Add-Member -Type NoteProperty -Name TechnicalDescription -Value $Null;
@@ -147,6 +151,7 @@ function Get-Datamarts
 		function CreateEmpty-BindingObject
 		{
 			$binding = New-Object PSObject;
+			$binding | Add-Member -Type NoteProperty -Name Id -Value $Null;
 			$binding | Add-Member -Type NoteProperty -Name Name -Value $Null;
 			$binding | Add-Member -Type NoteProperty -Name Description -Value $Null;
 			$binding | Add-Member -Type NoteProperty -Name Classification -Value $Null;
@@ -161,6 +166,7 @@ function Get-Datamarts
 		function CreateEmpty-SourceEntityObject
 		{
 			$sourceEntity = New-Object PSObject;
+			$sourceEntity | Add-Member -Type NoteProperty -Name Id -Value $Null;
 			$sourceEntity | Add-Member -Type NoteProperty -Name EntityName -Value $Null;
 			$sourceEntity | Add-Member -Type NoteProperty -Name DatabaseName -Value $Null;
 			$sourceEntity | Add-Member -Type NoteProperty -Name SchemaName -Value $Null;
@@ -176,6 +182,7 @@ function Get-Datamarts
 		function CreateEmpty-SourceFieldObject
 		{
 			$sourceField = New-Object PSObject;
+			$sourceField | Add-Member -Type NoteProperty -Name Id -Value $Null;
 			$sourceField | Add-Member -Type NoteProperty -Name FieldName -Value $Null;
 			$sourceField | Add-Member -Type NoteProperty -Name BusinessDescription -Value $Null;
 			$sourceField | Add-Member -Type NoteProperty -Name TechnicalDescription -Value $Null;
@@ -262,10 +269,12 @@ function Get-Datamarts
 			{
 				$_field | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($_field.Id) and AnnotatedObjectType eq 'Field')");
 			}
-			$_dataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($_dataMart.Id)_datamart.json" -Encoding Default -Force | Out-Null;
+			#$_dataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($_dataMart.Id)_datamart.json" -Encoding ascii -Force | Out-Null;
 			#endregion
+
 			#region CREATE A NEW ELASTIC SEARCH VERSION OF THE DATA MART
 			$datamart = CreateEmpty-DatamartObject;			
+			$datamart.Id = $_dataMart.Id;
 			$datamart.Name = $_dataMart.Name;
 			$datamart.Description = $_dataMart.Description;
 			$datamart.DataMartType = $_dataMart.DataMartType;
@@ -275,6 +284,7 @@ function Get-Datamarts
 			foreach($_binding in $_dataMart.Bindings)
 			{
 			    $binding = CreateEmpty-BindingObject;
+			    $binding.Id = $_binding.Id;
 			    $binding.Name = $_binding.Name;
 			    $binding.Description = $_binding.Description;
 			    $binding.Classification = $_binding.Classification;
@@ -286,6 +296,7 @@ function Get-Datamarts
                 foreach($_bindingNote in $_binding.Notes)
                 {
                     $bindingNote = CreateEmpty-NoteObject;
+			        $bindingNote.Id = $_bindingNote.Id;
 			        $bindingNote.NoteType = $_bindingNote.NoteType;
 			        $bindingNote.NoteText = $_bindingNote.NoteText;
 			        $bindingNote.User = $_bindingNote.User;
@@ -306,6 +317,7 @@ function Get-Datamarts
 			foreach($_entity in $_dataMart.Entities)
 			{
 			    $entity = CreateEmpty-EntityObject;
+			    $entity.Id = $_entity.Id;
 			    $entity.EntityName = $_entity.EntityName;
 			    $entity.DatabaseName = $_entity.AttributeValues[$_entity.AttributeValues.AttributeName.IndexOf('DatabaseName')].AttributeValue;
 			    $entity.SchemaName = $_entity.AttributeValues[$_entity.AttributeValues.AttributeName.IndexOf('SchemaName')].AttributeValue;
@@ -325,6 +337,7 @@ function Get-Datamarts
                     $_sourceEntity = Get-DosData -Uri "$metadataServiceUrl/Entities($($_sourceEntityId.SourceEntityId))"
                     
 			        $sourceEntity = CreateEmpty-SourceEntityObject;
+			        $sourceEntity.Id = $_sourceEntity.Id;
 			        $sourceEntity.EntityName = $_sourceEntity.EntityName;
 			        $sourceEntity.DatabaseName = $_sourceEntity.AttributeValues[$_sourceEntity.AttributeValues.AttributeName.IndexOf('DatabaseName')].AttributeValue;
 			        $sourceEntity.SchemaName = $_sourceEntity.AttributeValues[$_sourceEntity.AttributeValues.AttributeName.IndexOf('SchemaName')].AttributeValue;
@@ -346,6 +359,7 @@ function Get-Datamarts
 			    foreach($_field in $_entity.Fields)
 			    {
 			        $field = CreateEmpty-FieldObject;
+			        $field.Id = $_field.Id;
 			        $field.FieldName = $_field.FieldName;
 			        $field.BusinessDescription = $_field.BusinessDescription;
 			        $field.TechnicalDescription = $_field.TechnicalDescription;
@@ -360,6 +374,7 @@ function Get-Datamarts
                     #    $_sourceField = Get-DosData -Uri "$metadataServiceUrl/Fields($($_sourceFieldId.SourceFieldId))"
                     #
 			        #    $sourceField = CreateEmpty-SourceFieldObject;
+			        #    $sourceField.Id = $_sourceField.Id;
 			        #    $sourceField.FieldName = $_sourceField.FieldName;
 			        #    $sourceField.BusinessDescription = $_sourceField.BusinessDescription;
 			        #    $sourceField.TechnicalDescription = $_sourceField.TechnicalDescription;
@@ -376,6 +391,7 @@ function Get-Datamarts
                     foreach($_fieldNote in $_field.Notes)
                     {
                         $fieldNote = CreateEmpty-NoteObject;
+			            $fieldNote.Id = $_fieldNote.Id;
 			            $fieldNote.NoteType = $_fieldNote.NoteType;
 			            $fieldNote.NoteText = $_fieldNote.NoteText;
 			            $fieldNote.User = $_fieldNote.User;
@@ -397,6 +413,7 @@ function Get-Datamarts
                 foreach($_entityNote in $_entity.Notes)
                 {
                     $entityNote = CreateEmpty-NoteObject;
+			        $entityNote.Id = $_entityNote.Id;
 			        $entityNote.NoteType = $_entityNote.NoteType;
 			        $entityNote.NoteText = $_entityNote.NoteText;
 			        $entityNote.User = $_entityNote.User;
@@ -417,6 +434,7 @@ function Get-Datamarts
             foreach($_dataMartNote in $_dataMart.Notes)
             {
                 $dataMartNote = CreateEmpty-NoteObject;
+			    $dataMartNote.Id = $_dataMartNote.Id;
 			    $dataMartNote.NoteType = $_dataMartNote.NoteType;
 			    $dataMartNote.NoteText = $_dataMartNote.NoteText;
 			    $dataMartNote.User = $_dataMartNote.User;
@@ -432,7 +450,7 @@ function Get-Datamarts
             #>
 
 
-			$dataMart | ConvertTo-Json -Depth 100 | Out-File "$($outputDirectory)\$($_dataMart.Id)_datamart_elastic_doc.json" -Force;
+			$dataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($_dataMart.Id)_datamart_elastic_doc.json" -Encoding ascii -Force;
 			#endregion
 			
 			$end = (Get-Date);
@@ -441,19 +459,46 @@ function Get-Datamarts
 	}
 }
 
+
+#get the token and update the configuration file
 $CONFIG | Add-Member -Type NoteProperty -Name TOKEN -Value (Get-AccessToken);
-Get-Datamarts -metadataServiceUrl $CONFIG.METADATA_SERVICE_URL -outputDirectory $CONFIG.OUTPUT_DIRECTORY -dataMartIds $CONFIG.DATAMARTS_ARRAY;
+foreach($property in $CONFIG.FILES.PSObject.Properties){
+    $property.Value = $property.Value.Replace("{{ROOT}}",$CONFIG.FILES.ROOT)
+}
+
+#get all of the data
+Get-Datamarts -metadataServiceUrl $CONFIG.METADATA_SERVICE_URL -outputDirectory $CONFIG.FILES.OUTPUT_DIRECTORY -dataMartIds $CONFIG.DATAMARTS;
+
+#setup the atlas mappings
+$Msg = "Updating elastic...($($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)/$($CONFIG.ELASTIC.MAPPING))..."; Write-Host $Msg -ForegroundColor Gray; Write-Verbose $Msg;
+$mappings = Get-Content $CONFIG.FILES.MAPPING_FILE;
+
+try
+{
+    #check if this index exists already
+    Invoke-RestMethod -Uri "$($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)" -ContentType "application/json" -Method "HEAD" | Out-Null
+    $Msg = "$(" " * 4)Deleting ""$($CONFIG.ELASTIC.INDEX)"" index because one already existed..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
+    Invoke-RestMethod -Uri "$($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)" -ContentType "application/json" -Method "DELETE" | Out-Null
+    $Msg = "Success"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
+}
+catch
+{
+}
+Invoke-RestMethod -Uri "$($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)" -ContentType "application/json" -Method "PUT" -Body $mappings | Out-Null
+$Msg = "$(" " * 4)Creating ""$($CONFIG.ELASTIC.INDEX)"" with mappings..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
+$Msg = "Success"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
 
 
-#$_dataMart = Get-Content .\output\1090_datamart.json | ConvertFrom-Json;
-#foreach($_entity in $dataMart.Entities[38])
-#{
-#    $_sourceEntities = $_dataMart.Bindings[(IndexOfAll -arr $_dataMart.Bindings.DestinationEntityId -val $_entity.Id)].BindingDependencies | Select-Object SourceEntityId -Unique;
-#    foreach($_sourceEntityId in $_sourceEntities)
-#    {
-#        Get-DosData -Uri "$metadataServiceUrl/Entities($_sourceEntityId)"
-#    }
-#}
+#load all of the data
+$Msg = "Loading data into ElasticSearch...($($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)/$($CONFIG.ELASTIC.MAPPING))..."; Write-Host $Msg -ForegroundColor Gray; Write-Verbose $Msg;
+$dataMartFiles = Get-ChildItem $CONFIG.FILES.OUTPUT_DIRECTORY -Include *_datamart_elastic_doc.json -Recurse;
+foreach($dataMartFile in $dataMartFiles){
+    $id = $dataMartFile.Name.Split("_")[0];        
+    $Msg = "$(" " * 4)_id : $($id)..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
+    $data = Get-Content $dataMartFile;
+    Invoke-RestMethod -Uri "$($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)/$($CONFIG.ELASTIC.MAPPING)/$($id)" -ContentType "application/json" -Method "POST" -Body $data | Out-Null
+    $Msg = "Success"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
+}
 
-#Set-Location "C:\Users\spencer.nicol\Documents\github\elastic-atlas"
-#Get-DosData -Uri "$($CONFIG.METADATA_SERVICE_URL)/DataMarts($(6))/Bindings?`$filter=DestinationEntityId eq $(226)/BindingDependencies"
+$end = (Get-Date);
+$Msg = "`nComplete ~ TOTAL DURATION: $(Get-Timepsan -start $start -end $end)"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
