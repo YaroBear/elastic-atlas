@@ -85,7 +85,7 @@
                             }
                         }
                     },
-                    "source-entity": {
+                    "source-entities": {
                         "properties": {
                             "permissions": {
                                 "type": "nested",
@@ -113,12 +113,12 @@
                             "last-successful-load": {
                                 "type": "date",
                                 "format": "yyyy-MM-dd HH:mm:ss"
+                            },
+                            "schema": {
+                                "type": "text"
                             }
                         }
-                    },
-                    "source-schema": {
-                        "type": "text"
-                    },
+                    },                    
                     "fields": {
                         "type": "nested",
                         "name": {
@@ -169,71 +169,79 @@
                                 }
                             }
                         }
-                    }
-                },
-                "source-bindings": {
-                    "type": "nested",
-                    "properties": {
-                        "name": {
-                            "type": "text"
-                        },
-                        "description": {
-                            "type": "text"
-                        },
-                        "sql": {
-                            "type": "text"
-                        },
-                        "status": {
-                            "type": "keyword"
-                        },
-                        "notes": {
-                            "type": "nested",
-                            "properties": {
-                                "description": {
-                                    "type": "text"
-                                },
-                                "text": {
-                                    "type": "text"
-                                },
-                                "user": {
-                                    "type": "text"
+                    },
+                    "source-bindings": {
+                        "type": "nested",
+                        "properties": {
+                            "name": {
+                                "type": "text"
+                            },
+                            "description": {
+                                "type": "text"
+                            },
+                            "sql": {
+                                "type": "text"
+                            },
+                            "status": {
+                                "type": "keyword"
+                            },
+                            "notes": {
+                                "type": "nested",
+                                "properties": {
+                                    "description": {
+                                        "type": "text"
+                                    },
+                                    "text": {
+                                        "type": "text"
+                                    },
+                                    "user": {
+                                        "type": "text"
+                                    }
                                 }
                             }
                         }
-                    }
-                },
-                "destination-bindings": {
-                    "type": "nested",
-                    "properties": {
-                        "name": {
-                            "type": "text"
-                        },
-                        "description": {
-                            "type": "text"
-                        },
-                        "sql": {
-                            "type": "text"
-                        },
-                        "status": {
-                            "type": "keyword"
-                        },
-                        "notes": {
-                            "type": "nested",
-                            "properties": {
-                                "description": {
-                                    "type": "text"
-                                },
-                                "text": {
-                                    "type": "text"
-                                },
-                                "user": {
-                                    "type": "text"
+                    },
+                    "destination-bindings": {
+                        "type": "nested",
+                        "properties": {
+                            "name": {
+                                "type": "text"
+                            },
+                            "description": {
+                                "type": "text"
+                            },
+                            "sql": {
+                                "type": "text"
+                            },
+                            "status": {
+                                "type": "keyword"
+                            },
+                            "notes": {
+                                "type": "nested",
+                                "properties": {
+                                    "description": {
+                                        "type": "text"
+                                    },
+                                    "text": {
+                                        "type": "text"
+                                    },
+                                    "user": {
+                                        "type": "text"
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            },
+            "bindings": {
+                
             }
         }
     }
 }
+
+// leave permission blank
+// convert ishidden to boolean
+// source-entity (only populated for source marts)
+// source-schema (only populated for source marts)
