@@ -251,6 +251,11 @@ function Get-Datamarts
 				$_entity | Add-Member -Type NoteProperty -Name Fields -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Entities($($_entity.Id))/Fields");
 				#$_entity | Add-Member -Type NoteProperty -Name Indexes -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Entities($($_entity.Id))/Indexes");
 				$_entity | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($_entity.Id) and AnnotatedObjectType eq 'Entity')");
+
+			    foreach ($_field in $_entity.Fields)
+			    {
+				    $_field | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($_field.Id) and AnnotatedObjectType eq 'Field')");
+			    }
 			}
 			foreach ($_binding in $_dataMart.Bindings)
 			{
@@ -265,10 +270,6 @@ function Get-Datamarts
 				}
 			}
 			
-			foreach ($_field in $_entity.Fields)
-			{
-				$_field | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($_field.Id) and AnnotatedObjectType eq 'Field')");
-			}
 			#$_dataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($_dataMart.Id)_datamart.json" -Encoding ascii -Force | Out-Null;
 			#endregion
 
