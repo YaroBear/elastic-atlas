@@ -290,7 +290,7 @@ function Get-Datamarts
 			    $binding.Classification = $_binding.Classification;
 			    $binding.Status = $_binding.Status;
 			    $binding.BindingType = $_binding.BindingType;
-			    $binding.UserDefinedSQL = $_binding.AttributeValues[$_binding.AttributeValues.AttributeName.IndexOf('UserDefinedSQL')].AttributeValue;
+			    $binding.UserDefinedSQL = try{$_binding.AttributeValues[$_binding.AttributeValues.AttributeName.IndexOf('UserDefinedSQL')].AttributeValue}catch{$null};
 
                 #Notes
                 foreach($_bindingNote in $_binding.Notes)
@@ -319,8 +319,8 @@ function Get-Datamarts
 			    $entity = CreateEmpty-EntityObject;
 			    $entity.Id = $_entity.Id;
 			    $entity.EntityName = $_entity.EntityName;
-			    $entity.DatabaseName = $_entity.AttributeValues[$_entity.AttributeValues.AttributeName.IndexOf('DatabaseName')].AttributeValue;
-			    $entity.SchemaName = $_entity.AttributeValues[$_entity.AttributeValues.AttributeName.IndexOf('SchemaName')].AttributeValue;
+			    $entity.DatabaseName = try{$_entity.AttributeValues[$_entity.AttributeValues.AttributeName.IndexOf('DatabaseName')].AttributeValue}catch{$null};
+			    $entity.SchemaName = try{$_entity.AttributeValues[$_entity.AttributeValues.AttributeName.IndexOf('SchemaName')].AttributeValue}catch{$null};
 			    $entity.BusinessDescription = $_entity.BusinessDescription;
 			    $entity.TechnicalDescription = $_entity.TechnicalDescription;
 			    $entity.IsPublic = $_entity.IsPublic;
@@ -339,8 +339,8 @@ function Get-Datamarts
 			        $sourceEntity = CreateEmpty-SourceEntityObject;
 			        $sourceEntity.Id = $_sourceEntity.Id;
 			        $sourceEntity.EntityName = $_sourceEntity.EntityName;
-			        $sourceEntity.DatabaseName = $_sourceEntity.AttributeValues[$_sourceEntity.AttributeValues.AttributeName.IndexOf('DatabaseName')].AttributeValue;
-			        $sourceEntity.SchemaName = $_sourceEntity.AttributeValues[$_sourceEntity.AttributeValues.AttributeName.IndexOf('SchemaName')].AttributeValue;
+			        $sourceEntity.DatabaseName = try{$_sourceEntity.AttributeValues[$_sourceEntity.AttributeValues.AttributeName.IndexOf('DatabaseName')].AttributeValue}catch{$null};
+			        $sourceEntity.SchemaName = try{$_sourceEntity.AttributeValues[$_sourceEntity.AttributeValues.AttributeName.IndexOf('SchemaName')].AttributeValue}catch{$null};
 			        $sourceEntity.BusinessDescription = $_sourceEntity.BusinessDescription;
 			        $sourceEntity.TechnicalDescription = $_sourceEntity.TechnicalDescription;
 			        $sourceEntity.IsPublic = $_sourceEntity.IsPublic;
