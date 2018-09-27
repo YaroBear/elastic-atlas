@@ -1,5 +1,5 @@
-﻿$CONFIG = Get-Content "$(Split-Path $MyInvocation.MyCommand.Path -Parent)\config.json" | ConvertFrom-Json
-$start = (Get-Date)
+﻿$CONFIG = Get-Content "$(Split-Path $MyInvocation.MyCommand.Path -Parent)\config.json" | ConvertFrom-Json;
+$start = (Get-Date);
 function Get-Timepsan ($start, $end)
 {
 	$runTime = New-Timespan -Start $start -End $end;
@@ -8,19 +8,19 @@ function Get-Timepsan ($start, $end)
 function Get-AccessToken
 {
 	$Msg = "Getting access token..."; Write-Host $Msg -ForegroundColor Gray; Write-Verbose $Msg;
-	$fabricUser = "fabric-installer"
-	$scopes = "dos/metadata dos/metadata.serviceAdmin fabric/authorization.read"
-	$url = "$($CONFIG.IDENTITY_SERVICE_URL)/connect/token"
+	$fabricUser = "fabric-installer";
+	$scopes = "dos/metadata dos/metadata.serviceAdmin fabric/authorization.read";
+	$url = "$($CONFIG.IDENTITY_SERVICE_URL)/connect/token";
 	$body = @{
 		client_id = "$fabricUser"
 		grant_type = "client_credentials"
 		scope	  = "$scopes"
 		client_secret = $CONFIG.DECRYPTED_INSTALLER_SECRET
-	}
+	};
 	$Msg = "$(" " * 4)$($CONFIG.IDENTITY_SERVICE_URL)..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
 	$accessTokenResponse = Invoke-RestMethod -Method Post -Uri $url -Body $body; $end = (Get-Date);
 	$Msg = "Success"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
-	return $accessTokenResponse.access_token
+	return $accessTokenResponse.access_token;
 }
 function Get-DosData
 {
@@ -50,7 +50,7 @@ function Get-DosData
 		}
 		catch
 		{
-			Write-Error $Error
+			Write-Error $Error;
 		}
 	}
 	end
@@ -78,217 +78,427 @@ function Get-Datamarts
 	)
 	begin
 	{
-		$rawMarts = if ($dataMartIds) { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts?`$filter=Id eq $($dataMartIds -join ' or Id eq ')" }
+		$_marts = if ($dataMartIds) { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts?`$filter=Id eq $($dataMartIds -join ' or Id eq ')" }
 		else { Get-DosData -Uri "$($metadataServiceUrl)/DataMarts" };
-		
-		#Get-DosData -Uri "$($metadataServiceUrl)/EntityRelationships"
-		#Get-DosData -Uri "$($metadataServiceUrl)/MetadataAuditLogs?`$top=5"
-		
 		#region FUNCTIONS FOR EMPTY DATAMART OBJECT CREATION
 		function CreateEmpty-DatamartObject
 		{
-			$datamart = New-Object PSObject
-			$datamart | Add-Member -Type NoteProperty -Name permissions -Value @()
-			$datamart | Add-Member -Type NoteProperty -Name name -Value $Null
-			$datamart | Add-Member -Type NoteProperty -Name description -Value $Null
-			$datamart | Add-Member -Type NoteProperty -Name type -Value $Null
-			$datamart | Add-Member -Type NoteProperty -Name is-hidden -Value $Null
-			$datamart | Add-Member -Type NoteProperty -Name notes -Value @()
-			$datamart | Add-Member -Type NoteProperty -Name entities -Value @()
+			$datamart = New-Object PSObject;
+			$datamart | Add-Member -Type NoteProperty -Name Id -Value $Null;
+			$datamart | Add-Member -Type NoteProperty -Name Name -Value $Null;
+			$datamart | Add-Member -Type NoteProperty -Name Description -Value $Null;
+			$datamart | Add-Member -Type NoteProperty -Name DataMartType -Value $Null;
+			$datamart | Add-Member -Type NoteProperty -Name IsHidden -Value $Null;
+			$datamart | Add-Member -Type NoteProperty -Name Entities -Value @();
+			$datamart | Add-Member -Type NoteProperty -Name Bindings -Value @();
+			$datamart | Add-Member -Type NoteProperty -Name Notes -Value @();
+			$datamart | Add-Member -Type NoteProperty -Name Permissions -Value @();
 			
-			return $datamart
+			return $datamart;
 		}
 		function CreateEmpty-PermissionObject
 		{
-			$permission = New-Object PSObject
-			$permission | Add-Member -Type NoteProperty -Name permission -Value $Null
+			$permission = New-Object PSObject;
+			$permission | Add-Member -Type NoteProperty -Name Permission -Value $Null;
 			
-			return $permission
+			return $permission;
 		}
 		function CreateEmpty-NoteObject
 		{
-			$note = New-Object PSObject
-			$note | Add-Member -Type NoteProperty -Name description -Value $Null
-			$note | Add-Member -Type NoteProperty -Name text -Value $Null
-			$note | Add-Member -Type NoteProperty -Name user -Value $Null
+			$note = New-Object PSObject;
+			$note | Add-Member -Type NoteProperty -Name Id -Value $Null;
+			$note | Add-Member -Type NoteProperty -Name NoteType -Value $Null;
+			$note | Add-Member -Type NoteProperty -Name NoteText -Value $Null;
+			$note | Add-Member -Type NoteProperty -Name User -Value $Null;
+			$note | Add-Member -Type NoteProperty -Name NoteTimestamp -Value $Null;
 			
-			return $note
+			return $note;
 		}
 		function CreateEmpty-EntityObject
 		{
-			$entity = New-Object PSObject
-			$entity | Add-Member -Type NoteProperty -Name permissions -Value @()
-			$entity | Add-Member -Type NoteProperty -Name name -Value $Null
-			$entity | Add-Member -Type NoteProperty -Name business-description -Value $Null
-			$entity | Add-Member -Type NoteProperty -Name technical-description -Value $Null
-			$entity | Add-Member -Type NoteProperty -Name is-public -Value $Null
-			$entity | Add-Member -Type NoteProperty -Name allows-data-entry -Value $Null
-			$entity | Add-Member -Type NoteProperty -Name last-successful-load -Value $Null
-			$entity | Add-Member -Type NoteProperty -Name database -Value $Null
-			$entity | Add-Member -Type NoteProperty -Name schema -Value $Null
-			$entity | Add-Member -Type NoteProperty -Name notes -Value @()
-			$entity | Add-Member -Type NoteProperty -Name source-entity -Value $Null
-			$entity | Add-Member -Type NoteProperty -Name source-schema -Value $Null
-			$entity | Add-Member -Type NoteProperty -Name fields -Value @()
+			$entity = New-Object PSObject;
+			$entity | Add-Member -Type NoteProperty -Name Id -Value $Null;
+			$entity | Add-Member -Type NoteProperty -Name EntityName -Value $Null;
+			$entity | Add-Member -Type NoteProperty -Name DatabaseName -Value $Null;
+			$entity | Add-Member -Type NoteProperty -Name SchemaName -Value $Null;
+			$entity | Add-Member -Type NoteProperty -Name BusinessDescription -Value $Null;
+			$entity | Add-Member -Type NoteProperty -Name TechnicalDescription -Value $Null;
+			$entity | Add-Member -Type NoteProperty -Name IsPublic -Value $Null;
+			$entity | Add-Member -Type NoteProperty -Name AllowsDataEntry -Value $Null;
+			$entity | Add-Member -Type NoteProperty -Name LastSuccessfulLoadTimestamp -Value $Null;
+			$entity | Add-Member -Type NoteProperty -Name Fields -Value @();
+			$entity | Add-Member -Type NoteProperty -Name SourceEntities -Value @();
+			$entity | Add-Member -Type NoteProperty -Name Notes -Value @();
+			$entity | Add-Member -Type NoteProperty -Name Permissions -Value @();
 			
-			return $entity
-		}
-		function CreateEmpty-SourceEntityObject
-		{
-			$sourceEntity = New-Object PSObject
-			$sourceEntity | Add-Member -Type NoteProperty -Name permissions -Value @()
-			$sourceEntity | Add-Member -Type NoteProperty -Name name -Value $Null
-			$sourceEntity | Add-Member -Type NoteProperty -Name business-description -Value $Null
-			$sourceEntity | Add-Member -Type NoteProperty -Name technical-description -Value $Null
-			$sourceEntity | Add-Member -Type NoteProperty -Name is-public -Value $Null
-			$sourceEntity | Add-Member -Type NoteProperty -Name allows-data-entry -Value $Null
-			$sourceEntity | Add-Member -Type NoteProperty -Name last-successful-load -Value $Null
-			
-			return $sourceEntity
+			return $entity;
 		}
 		function CreateEmpty-FieldObject
 		{
-			$field = New-Object PSObject
-			$field | Add-Member -Type NoteProperty -Name name -Value @()
-			$field | Add-Member -Type NoteProperty -Name business-description -Value $Null
-			$field | Add-Member -Type NoteProperty -Name technical-description -Value $Null
-			$field | Add-Member -Type NoteProperty -Name status -Value $Null
-			$field | Add-Member -Type NoteProperty -Name data-type -Value $Null
-			$field | Add-Member -Type NoteProperty -Name notes -Value $Null
-			$field | Add-Member -Type NoteProperty -Name source-field -Value $Null
+			$field = New-Object PSObject;
+			$field | Add-Member -Type NoteProperty -Name Id -Value $Null;
+			$field | Add-Member -Type NoteProperty -Name FieldName -Value $Null;
+			$field | Add-Member -Type NoteProperty -Name BusinessDescription -Value $Null;
+			$field | Add-Member -Type NoteProperty -Name TechnicalDescription -Value $Null;
+			$field | Add-Member -Type NoteProperty -Name Status -Value $Null;
+			$field | Add-Member -Type NoteProperty -Name DataType -Value $Null;
+			$field | Add-Member -Type NoteProperty -Name SourceFields -Value @();
+			$field | Add-Member -Type NoteProperty -Name Notes -Value @();
+			$field | Add-Member -Type NoteProperty -Name Permissions -Value @();
 			
-			return $field
+			return $field;
 		}
-		function CreateEmpty-SourceBindingObject
+		function CreateEmpty-BindingObject
 		{
-			$sourceBinding = New-Object PSObject
-			$sourceBinding | Add-Member -Type NoteProperty -Name name -Value @()
-			$sourceBinding | Add-Member -Type NoteProperty -Name description -Value $Null
-			$sourceBinding | Add-Member -Type NoteProperty -Name sql -Value $Null
-			$sourceBinding | Add-Member -Type NoteProperty -Name status -Value $Null
-			$sourceBinding | Add-Member -Type NoteProperty -Name notes -Value $Null
+			$binding = New-Object PSObject;
+			$binding | Add-Member -Type NoteProperty -Name Id -Value $Null;
+			$binding | Add-Member -Type NoteProperty -Name Name -Value $Null;
+			$binding | Add-Member -Type NoteProperty -Name Description -Value $Null;
+			$binding | Add-Member -Type NoteProperty -Name Classification -Value $Null;
+			$binding | Add-Member -Type NoteProperty -Name Status -Value $Null;
+			$binding | Add-Member -Type NoteProperty -Name BindingType -Value $Null;
+			$binding | Add-Member -Type NoteProperty -Name UserDefinedSQL -Value $Null;
+			$binding | Add-Member -Type NoteProperty -Name Notes -Value @();
+			$binding | Add-Member -Type NoteProperty -Name Permissions -Value @();
 			
-			return $sourceBinding
+			return $binding;
 		}
-		function CreateEmpty-DestinationBindingObject
+		function CreateEmpty-SourceEntityObject
 		{
-			$destinationBinding = New-Object PSObject
-			$destinationBinding | Add-Member -Type NoteProperty -Name name -Value @()
-			$destinationBinding | Add-Member -Type NoteProperty -Name description -Value $Null
-			$destinationBinding | Add-Member -Type NoteProperty -Name sql -Value $Null
-			$destinationBinding | Add-Member -Type NoteProperty -Name status -Value $Null
-			$destinationBinding | Add-Member -Type NoteProperty -Name notes -Value $Null
+			$sourceEntity = New-Object PSObject;
+			$sourceEntity | Add-Member -Type NoteProperty -Name Id -Value $Null;
+			$sourceEntity | Add-Member -Type NoteProperty -Name EntityName -Value $Null;
+			$sourceEntity | Add-Member -Type NoteProperty -Name DatabaseName -Value $Null;
+			$sourceEntity | Add-Member -Type NoteProperty -Name SchemaName -Value $Null;
+			$sourceEntity | Add-Member -Type NoteProperty -Name BusinessDescription -Value $Null;
+			$sourceEntity | Add-Member -Type NoteProperty -Name TechnicalDescription -Value $Null;
+			$sourceEntity | Add-Member -Type NoteProperty -Name IsPublic -Value $Null;
+			$sourceEntity | Add-Member -Type NoteProperty -Name AllowsDataEntry -Value $Null;
+			$sourceEntity | Add-Member -Type NoteProperty -Name LastSuccessfulLoadTimestamp -Value $Null;
+			$sourceEntity | Add-Member -Type NoteProperty -Name Permissions -Value @();
 			
-			return $destinationBinding
+			return $sourceEntity;
 		}
+		function CreateEmpty-SourceFieldObject
+		{
+			$sourceField = New-Object PSObject;
+			$sourceField | Add-Member -Type NoteProperty -Name Id -Value $Null;
+			$sourceField | Add-Member -Type NoteProperty -Name FieldName -Value $Null;
+			$sourceField | Add-Member -Type NoteProperty -Name BusinessDescription -Value $Null;
+			$sourceField | Add-Member -Type NoteProperty -Name TechnicalDescription -Value $Null;
+			$sourceField | Add-Member -Type NoteProperty -Name Permissions -Value @();
+			
+			return $sourceField;
+		}
+		#endregion
+        #region ANCILLARY FUNCTIONS
 		function Y
 		{
-			$true
+			$true;
 		}
 		function N
 		{
-			$false
+			$false;
 		}
-		#endregion
 		function Create-Directory ($Dir)
 		{
 			If (!(Test-Path $Dir))
 			{
-				New-Item -ItemType Directory -Force -Path $Dir -ErrorAction Stop | Out-Null
+				New-Item -ItemType Directory -Force -Path $Dir -ErrorAction Stop | Out-Null;
 			}
 		}
+        function IndexOfAll($arr,$val)
+        {
+            $indexes = @();
+            $i = 0;
+            foreach($obj in $arr){
+                if($obj -eq $val){
+                    $indexes += $i;
+                }
+                $i++;
+            }
+            if(!$indexes){
+                $indexes += -1;
+            }            
+            return $indexes;    
+        }
+		#endregion
 	}
 	process
 	{
-		Create-Directory -Dir $outputDirectory
+		Create-Directory -Dir $outputDirectory;
 		
-		$toProcess = $($rawMarts | Measure).Count;
+		$toProcess = $($_marts | Measure).Count;
 		
 		$Msg = "Getting data from $($CONFIG.METADATA_SERVICE_URL)..."; Write-Host $Msg -ForegroundColor Gray; Write-Verbose $Msg;
 		
 		$i = 0;
-		foreach ($rawMart in $rawMarts)
+		foreach ($_mart in $_marts)
 		{
 			$i++;
-			$start = (Get-Date)
-			$Msg = "$(" " * 4)[$($i)/$($toProcess)] $($rawMart.Name)..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
+			$start = (Get-Date);
+			$Msg = "$(" " * 4)[$($i)/$($toProcess)] $($_mart.Name)..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
 			
 			#region CREATE A RAW OBJECT OF THE DATA MART AS IT CAME FROM METADATA SERVICE
-			$rawDataMart = $rawMart;
-			$rawDataMart | Add-Member -Type NoteProperty -Name Entities -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Entities")
-			$rawDataMart | Add-Member -Type NoteProperty -Name Bindings -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Bindings")
-			$rawDataMart | Add-Member -Type NoteProperty -Name Connections -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Connections")
-			$rawDataMart | Add-Member -Type NoteProperty -Name RelatedResources -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/RelatedResources")
-			$rawDataMart | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($rawDataMart.Id) and AnnotatedObjectType eq 'DataMart')")
-			foreach ($rawEntity in $rawDataMart.Entities)
+			$_dataMart = $_mart;
+			$_dataMart | Add-Member -Type NoteProperty -Name Entities -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Entities");
+			$_dataMart | Add-Member -Type NoteProperty -Name Bindings -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Bindings");
+			#$_dataMart | Add-Member -Type NoteProperty -Name Connections -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Connections");
+			#$_dataMart | Add-Member -Type NoteProperty -Name RelatedResources -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/RelatedResources");
+			$_dataMart | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($_dataMart.Id) and AnnotatedObjectType eq 'DataMart')");
+			foreach ($_entity in $_dataMart.Entities)
 			{
-				$rawEntity | Add-Member -Type NoteProperty -Name Fields -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Entities($($rawEntity.Id))/Fields")
-				$rawEntity | Add-Member -Type NoteProperty -Name Indexes -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Entities($($rawEntity.Id))/Indexes")
-				$rawEntity | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($rawEntity.Id) and AnnotatedObjectType eq 'Entity')")
+				$_entity | Add-Member -Type NoteProperty -Name Fields -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Entities($($_entity.Id))/Fields");
+				#$_entity | Add-Member -Type NoteProperty -Name Indexes -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Entities($($_entity.Id))/Indexes");
+				$_entity | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($_entity.Id) and AnnotatedObjectType eq 'Entity')");
 			}
-			foreach ($rawBinding in $rawDataMart.Bindings)
+			foreach ($_binding in $_dataMart.Bindings)
 			{
-				$rawBinding | Add-Member -Type NoteProperty -Name BindingDependencies -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Bindings($($rawBinding.Id))/BindingDependencies")
-				$rawBinding | Add-Member -Type NoteProperty -Name IncrementalConfigurations -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Bindings($($rawBinding.Id))/IncrementalConfigurations")
-				$rawBinding | Add-Member -Type NoteProperty -Name ObjectRelationships -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Bindings($($rawBinding.Id))/ObjectRelationships")
-				$rawBinding | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($rawBinding.Id) and AnnotatedObjectType eq 'Binding')")
+				$_binding | Add-Member -Type NoteProperty -Name BindingDependencies -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Bindings($($_binding.Id))/BindingDependencies");
+				#$_binding | Add-Member -Type NoteProperty -Name IncrementalConfigurations -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Bindings($($_binding.Id))/IncrementalConfigurations");
+				#$_binding | Add-Member -Type NoteProperty -Name ObjectRelationships -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Bindings($($_binding.Id))/ObjectRelationships");
+				$_binding | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($_binding.Id) and AnnotatedObjectType eq 'Binding')");
 				
-				foreach ($rawBindingDependency in $rawBinding.BindingDependencies)
+				foreach ($_bindingDependency in $_binding.BindingDependencies)
 				{
-					$rawBindingDependency | Add-Member -Type NoteProperty -Name FieldMappings -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($rawDataMart.Id))/Bindings($($rawBinding.Id))/BindingDependencies($($rawBindingDependency.Id))/FieldMappings")
+					$_bindingDependency | Add-Member -Type NoteProperty -Name FieldMappings -Value @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Bindings($($_binding.Id))/BindingDependencies($($_bindingDependency.Id))/FieldMappings");
 				}
 			}
 			
-			foreach ($rawField in $rawEntity.Fields)
+			foreach ($_field in $_entity.Fields)
 			{
-				$rawField | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($rawField.Id) and AnnotatedObjectType eq 'Field')")
+				$_field | Add-Member -Type NoteProperty -Name Notes -Value @(Get-DosData -Uri "$($metadataServiceUrl)/Notes?`$filter=(AnnotatedObjectId eq $($_field.Id) and AnnotatedObjectType eq 'Field')");
 			}
-			$rawDataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($rawDataMart.Id)_datamart.json" -Encoding Default -Force | Out-Null;
+			#$_dataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($_dataMart.Id)_datamart.json" -Encoding ascii -Force | Out-Null;
+			#endregion
+
+			#region CREATE A NEW ELASTIC SEARCH VERSION OF THE DATA MART
+			$datamart = CreateEmpty-DatamartObject;			
+			$datamart.Id = $_dataMart.Id;
+			$datamart.Name = $_dataMart.Name;
+			$datamart.Description = $_dataMart.Description;
+			$datamart.DataMartType = $_dataMart.DataMartType;
+			$datamart.IsHidden = & $_dataMart.IsHidden;
+
+			#Bindings
+			foreach($_binding in $_dataMart.Bindings)
+			{
+			    $binding = CreateEmpty-BindingObject;
+			    $binding.Id = $_binding.Id;
+			    $binding.Name = $_binding.Name;
+			    $binding.Description = $_binding.Description;
+			    $binding.Classification = $_binding.Classification;
+			    $binding.Status = $_binding.Status;
+			    $binding.BindingType = $_binding.BindingType;
+			    $binding.UserDefinedSQL = $_binding.AttributeValues[$_binding.AttributeValues.AttributeName.IndexOf('UserDefinedSQL')].AttributeValue;
+
+                #Notes
+                foreach($_bindingNote in $_binding.Notes)
+                {
+                    $bindingNote = CreateEmpty-NoteObject;
+			        $bindingNote.Id = $_bindingNote.Id;
+			        $bindingNote.NoteType = $_bindingNote.NoteType;
+			        $bindingNote.NoteText = $_bindingNote.NoteText;
+			        $bindingNote.User = $_bindingNote.User;
+			        $bindingNote.NoteTimestamp = $_bindingNote.NoteTimestamp;
+
+                    $binding.Notes += $bindingNote;
+                }
+
+                <#Permissions
+                #$bindingPermission = CreateEmpty-PermissionObject;
+                #$binding.Permissions += $bindingPermission;
+                #>
+
+			    $dataMart.Bindings += $binding;
+			}
+
+			#Entities
+			foreach($_entity in $_dataMart.Entities)
+			{
+			    $entity = CreateEmpty-EntityObject;
+			    $entity.Id = $_entity.Id;
+			    $entity.EntityName = $_entity.EntityName;
+			    $entity.DatabaseName = $_entity.AttributeValues[$_entity.AttributeValues.AttributeName.IndexOf('DatabaseName')].AttributeValue;
+			    $entity.SchemaName = $_entity.AttributeValues[$_entity.AttributeValues.AttributeName.IndexOf('SchemaName')].AttributeValue;
+			    $entity.BusinessDescription = $_entity.BusinessDescription;
+			    $entity.TechnicalDescription = $_entity.TechnicalDescription;
+			    $entity.IsPublic = $_entity.IsPublic;
+			    $entity.AllowsDataEntry = $_entity.AllowsDataEntry;
+			    $entity.LastSuccessfulLoadTimestamp = $_entity.LastSuccessfulLoadTimestamp;
+
+			    #SourceEntities
+                #$_dentinationEntityIndexes = IndexOfAll -arr $_dataMart.Bindings.DestinationEntityId -val ;
+                $sourceBindings = @(Get-DosData -Uri "$metadataServiceUrl/DataMarts($($_dataMart.Id))/Bindings?`$filter=DestinationEntityId eq $($_entity.Id)");
+                $_sourceEntityIds = ($_dataMart.Bindings | Where-Object {$_.Id -in $sourceBindings.Id}).BindingDependencies | Select-Object SourceEntityId -Unique;
+
+                foreach($_sourceEntityId in $_sourceEntityIds)
+                {
+                    $_sourceEntity = Get-DosData -Uri "$metadataServiceUrl/Entities($($_sourceEntityId.SourceEntityId))"
+                    
+			        $sourceEntity = CreateEmpty-SourceEntityObject;
+			        $sourceEntity.Id = $_sourceEntity.Id;
+			        $sourceEntity.EntityName = $_sourceEntity.EntityName;
+			        $sourceEntity.DatabaseName = $_sourceEntity.AttributeValues[$_sourceEntity.AttributeValues.AttributeName.IndexOf('DatabaseName')].AttributeValue;
+			        $sourceEntity.SchemaName = $_sourceEntity.AttributeValues[$_sourceEntity.AttributeValues.AttributeName.IndexOf('SchemaName')].AttributeValue;
+			        $sourceEntity.BusinessDescription = $_sourceEntity.BusinessDescription;
+			        $sourceEntity.TechnicalDescription = $_sourceEntity.TechnicalDescription;
+			        $sourceEntity.IsPublic = $_sourceEntity.IsPublic;
+			        $sourceEntity.AllowsDataEntry = $_sourceEntity.AllowsDataEntry;
+			        $sourceEntity.LastSuccessfulLoadTimestamp = $_sourceEntity.LastSuccessfulLoadTimestamp;
+                
+			        <#Permissions
+                    #$sourceEntityPermission = CreateEmpty-PermissionObject;
+                    #$sourceEntity.Permissions += $sourceEntityPermission;
+                    #>
+                
+			        $entity.SourceEntities += $sourceEntity;
+                }
+
+			    #Fields
+			    foreach($_field in $_entity.Fields)
+			    {
+			        $field = CreateEmpty-FieldObject;
+			        $field.Id = $_field.Id;
+			        $field.FieldName = $_field.FieldName;
+			        $field.BusinessDescription = $_field.BusinessDescription;
+			        $field.TechnicalDescription = $_field.TechnicalDescription;
+			        $field.Status = $_field.Status;
+			        $field.DataType = $_field.DataType;
+
+			        #SourceFields
+                    #$_sourceFieldIds = $_dataMart.Bindings[$_dentinationEntityIndexes].BindingDependencies.FieldMappings[(IndexOfAll -arr $_dataMart.Bindings[$_dentinationEntityIndexes].BindingDependencies.FieldMappings.DestinationFieldId -val $_field.Id)] | Select-Object SourceFieldId -Unique;
+                    #
+                    #foreach($_sourceFieldId in $_sourceFieldIds)
+                    #{
+                    #    $_sourceField = Get-DosData -Uri "$metadataServiceUrl/Fields($($_sourceFieldId.SourceFieldId))"
+                    #
+			        #    $sourceField = CreateEmpty-SourceFieldObject;
+			        #    $sourceField.Id = $_sourceField.Id;
+			        #    $sourceField.FieldName = $_sourceField.FieldName;
+			        #    $sourceField.BusinessDescription = $_sourceField.BusinessDescription;
+			        #    $sourceField.TechnicalDescription = $_sourceField.TechnicalDescription;
+                    #
+			        #    <#Permissions
+                    #    #$sourceFieldPermission = CreateEmpty-PermissionObject;
+                    #    #$sourceField.Permissions += $sourceFieldPermission;
+                    #    #>
+                    #
+			        #    $field.SourceFields += $sourceField;
+                    #}
+
+			        #Notes
+                    foreach($_fieldNote in $_field.Notes)
+                    {
+                        $fieldNote = CreateEmpty-NoteObject;
+			            $fieldNote.Id = $_fieldNote.Id;
+			            $fieldNote.NoteType = $_fieldNote.NoteType;
+			            $fieldNote.NoteText = $_fieldNote.NoteText;
+			            $fieldNote.User = $_fieldNote.User;
+			            $fieldNote.NoteTimestamp = $_fieldNote.NoteTimestamp;
+
+                        $field.Notes += $fieldNote;
+                    }
+
+			        <#Permissions
+                    #$fieldPermission = CreateEmpty-PermissionObject;
+                    #$field.Permissions += $fieldPermission;
+                    #>
+			    
+			        $entity.Fields += $field;        
+			    }
+
+
+			    #Notes
+                foreach($_entityNote in $_entity.Notes)
+                {
+                    $entityNote = CreateEmpty-NoteObject;
+			        $entityNote.Id = $_entityNote.Id;
+			        $entityNote.NoteType = $_entityNote.NoteType;
+			        $entityNote.NoteText = $_entityNote.NoteText;
+			        $entityNote.User = $_entityNote.User;
+			        $entityNote.NoteTimestamp = $_entityNote.NoteTimestamp;
+
+                    $entity.Notes += $entityNote;
+                }
+
+			    <#Permissions
+                #$entityPermission = CreateEmpty-PermissionObject;
+                #$entity.Permissions += $entityPermission;
+                #>
+			
+			    $dataMart.Entities += $entity;
+			}
+
+			#Notes
+            foreach($_dataMartNote in $_dataMart.Notes)
+            {
+                $dataMartNote = CreateEmpty-NoteObject;
+			    $dataMartNote.Id = $_dataMartNote.Id;
+			    $dataMartNote.NoteType = $_dataMartNote.NoteType;
+			    $dataMartNote.NoteText = $_dataMartNote.NoteText;
+			    $dataMartNote.User = $_dataMartNote.User;
+			    $dataMartNote.NoteTimestamp = $_dataMartNote.NoteTimestamp;
+
+                $dataMart.Notes += $dataMartNote;
+            }
+
+
+			<#Permissions
+            #$dataMartPermission = CreateEmpty-PermissionObject;
+            #$dataMart.Permissions += $dataMartPermission;
+            #>
+
+
+			$dataMart | ConvertTo-Json -Depth 100 -Compress | Out-File "$($outputDirectory)\$($_dataMart.Id)_datamart_elastic_doc.json" -Encoding ascii -Force;
 			#endregion
 			
-			##region CREATE A NEW ELASTIC SEARCH VERSION OF THE DATA MART
-			#$datamart = New-Object PSObject;
-			#$datamart | Add-Member -Type NoteProperty -Name data-mart -Value (CreateEmpty-DatamartObject);
-			#
-			#$dataMart.'data-mart'.name = $rawDataMart.Name;
-			#$dataMart.'data-mart'.description = $rawDataMart.Description;
-			#$dataMart.'data-mart'.type = $rawDataMart.DataMartType;
-			#$dataMart.'data-mart'.'is-hidden' = & $rawDataMart.IsHidden;
-			#
-			#foreach($rawEntity in $rawDataMart.Entities)
-			#{
-			#    $entity = CreateEmpty-EntityObject;
-			#    $entity.name = $rawEntity.EntityName;
-			#    $entity.'business-description' = $rawEntity.BusinessDescription;
-			#    $entity.'technical-description' = $rawEntity.TechnicalDescription;
-			#    $entity.'is-public' = $rawEntity.IsPublic;
-			#    $entity.'allows-data-entry' = $rawEntity.AllowsDataEntry;
-			#    $entity.'last-successful-load' = $rawEntity.LastSuccessfulLoadTimestamp;
-			#    $entity.database = $rawEntity.AttributeValues[$rawEntity.AttributeValues.AttributeName.IndexOf('DatabaseName')].AttributeValue;
-			#    $entity.schema = $rawEntity.AttributeValues[$rawEntity.AttributeValues.AttributeName.IndexOf('SchemaName')].AttributeValue;
-			#
-			#    foreach($rawField in $rawEntity.Fields)
-			#    {
-			#        $field = CreateEmpty-FieldObject;
-			#        $field.name = $rawField.FieldName;
-			#        $field.'business-description' = $rawField.BusinessDescription;
-			#        $field.'technical-description' = $rawField.TechnicalDescription;
-			#        $field.status = $rawField.Status;
-			#        $field.'data-type' = $rawField.DataType;
-			#
-			#        $entity.fields += $field;        
-			#    }
-			#
-			#    $dataMart.'data-mart'.entities += $entity;
-			#}
-			#$dataMart | ConvertTo-Json -Depth 100 | Out-File "$($outputDirectory)\$($rawDataMart.Id)_datamart_elastic_doc.json" -Force
-			##endregion
-			
-			$end = (Get-Date)
+			$end = (Get-Date);
 			$Msg = "Success ~ $(Get-Timepsan -start $start -end $end)"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
 		}
 	}
 }
 
+
+#get the token and update the configuration file
 $CONFIG | Add-Member -Type NoteProperty -Name TOKEN -Value (Get-AccessToken);
-Get-Datamarts -metadataServiceUrl $CONFIG.METADATA_SERVICE_URL -outputDirectory $CONFIG.OUTPUT_DIRECTORY -dataMartIds $CONFIG.DATAMARTS_ARRAY
+foreach($property in $CONFIG.FILES.PSObject.Properties){
+    $property.Value = $property.Value.Replace("{{ROOT}}",$CONFIG.FILES.ROOT)
+}
+
+#get all of the data
+Get-Datamarts -metadataServiceUrl $CONFIG.METADATA_SERVICE_URL -outputDirectory $CONFIG.FILES.OUTPUT_DIRECTORY -dataMartIds $CONFIG.DATAMARTS;
+
+#setup the atlas mappings
+$Msg = "Updating elastic...($($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)/$($CONFIG.ELASTIC.MAPPING))..."; Write-Host $Msg -ForegroundColor Gray; Write-Verbose $Msg;
+$mappings = Get-Content $CONFIG.FILES.MAPPING_FILE;
+
+try
+{
+    #check if this index exists already
+    Invoke-RestMethod -Uri "$($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)" -ContentType "application/json" -Method "HEAD" | Out-Null
+    $Msg = "$(" " * 4)Deleting ""$($CONFIG.ELASTIC.INDEX)"" index because one already existed..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
+    Invoke-RestMethod -Uri "$($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)" -ContentType "application/json" -Method "DELETE" | Out-Null
+    $Msg = "Success"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
+}
+catch
+{
+}
+Invoke-RestMethod -Uri "$($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)" -ContentType "application/json" -Method "PUT" -Body $mappings | Out-Null
+$Msg = "$(" " * 4)Creating ""$($CONFIG.ELASTIC.INDEX)"" with mappings..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
+$Msg = "Success"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
+
+
+#load all of the data
+$Msg = "Loading data into ElasticSearch...($($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)/$($CONFIG.ELASTIC.MAPPING))..."; Write-Host $Msg -ForegroundColor Gray; Write-Verbose $Msg;
+$dataMartFiles = Get-ChildItem $CONFIG.FILES.OUTPUT_DIRECTORY -Include *_datamart_elastic_doc.json -Recurse;
+foreach($dataMartFile in $dataMartFiles){
+    $id = $dataMartFile.Name.Split("_")[0];        
+    $Msg = "$(" " * 4)_id : $($id)..."; Write-Host $Msg -ForegroundColor White -NoNewline; Write-Verbose $Msg;
+    $data = Get-Content $dataMartFile;
+    Invoke-RestMethod -Uri "$($CONFIG.ELASTIC.SERVICE_URL)/$($CONFIG.ELASTIC.INDEX)/$($CONFIG.ELASTIC.MAPPING)/$($id)" -ContentType "application/json" -Method "POST" -Body $data | Out-Null
+    $Msg = "Success"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
+}
+
+$end = (Get-Date);
+$Msg = "`nComplete ~ TOTAL DURATION: $(Get-Timepsan -start $start -end $end)"; Write-Host $Msg -ForegroundColor Green; Write-Verbose $Msg;
